@@ -19,10 +19,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ThemeProvider defaultTheme="system" storageKey="madadgar-ui-theme">
-        <LanguageProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <LanguageProvider>
+            <Toaster />
+            <Sonner />
             <Layout>
               <Routes>
                 <Route path="/" element={<EmergencyHome />} />
@@ -34,8 +34,8 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
-          </BrowserRouter>
-        </LanguageProvider>
+          </LanguageProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>

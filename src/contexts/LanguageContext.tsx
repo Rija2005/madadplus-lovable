@@ -150,8 +150,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useLanguage = () => {
+  console.log('useLanguage hook called');
   const context = useContext(LanguageContext);
+  console.log('Context value:', context);
+  
   if (context === undefined) {
+    console.error('useLanguage must be used within a LanguageProvider - context is undefined');
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;
