@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from '@/contexts/ThemeProvider';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import Layout from "./components/Layout";
 import EmergencyHome from "./pages/EmergencyHome";
 import AmbulanceDispatch from "./pages/AmbulanceDispatch";
@@ -16,21 +18,25 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<EmergencyHome />} />
-            <Route path="/ambulance" element={<AmbulanceDispatch />} />
-            <Route path="/hospitals" element={<HospitalConnect />} />
-            <Route path="/first-aid" element={<FirstAidAssistant />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+      <ThemeProvider defaultTheme="system" storageKey="madadgar-ui-theme">
+        <LanguageProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<EmergencyHome />} />
+                <Route path="/ambulance" element={<AmbulanceDispatch />} />
+                <Route path="/hospitals" element={<HospitalConnect />} />
+                <Route path="/first-aid" element={<FirstAidAssistant />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </BrowserRouter>
+        </LanguageProvider>
+      </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

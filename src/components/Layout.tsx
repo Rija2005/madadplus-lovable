@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Phone, 
   Menu, 
@@ -17,15 +19,15 @@ import {
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [language, setLanguage] = useState<'en' | 'ur'>('en');
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
 
   const navigation = [
-    { name: 'Emergency', href: '/', icon: AlertTriangle, color: 'emergency' },
-    { name: 'Ambulance', href: '/ambulance', icon: Ambulance, color: 'primary' },
-    { name: 'Hospitals', href: '/hospitals', icon: Hospital, color: 'success' },
-    { name: 'First Aid', href: '/first-aid', icon: Heart, color: 'warning' },
-    { name: 'Reports', href: '/reports', icon: Shield, color: 'secondary' },
+    { name: 'nav.emergency', href: '/', icon: AlertTriangle, color: 'emergency' },
+    { name: 'nav.ambulance', href: '/ambulance', icon: Ambulance, color: 'primary' },
+    { name: 'nav.hospitals', href: '/hospitals', icon: Hospital, color: 'success' },
+    { name: 'nav.firstAid', href: '/first-aid', icon: Heart, color: 'warning' },
+    { name: 'nav.reports', href: '/reports', icon: Shield, color: 'secondary' },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -47,10 +49,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-primary">
-                  {language === 'en' ? 'Madadgar-AI' : 'مددگار-اے آئی'}
+                  {t('header.title')}
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  {language === 'en' ? 'Emergency Response' : 'ہنگامی ردعمل'}
+                  {t('header.subtitle')}
                 </p>
               </div>
             </Link>
@@ -65,7 +67,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     className="flex items-center gap-2"
                   >
                     <item.icon className="w-4 h-4" />
-                    {language === 'en' ? item.name : getUrduTranslation(item.name)}
+                    {t(item.name)}
                   </Button>
                 </Link>
               ))}
@@ -73,6 +75,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Actions */}
             <div className="flex items-center space-x-2">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+              
               {/* Language Toggle */}
               <Button
                 variant="outline"
@@ -87,7 +92,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               {/* Emergency Call */}
               <Button variant="emergency" size="sm" className="hidden sm:flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                {language === 'en' ? 'Call 1122' : '۱۱۲۲ کال کریں'}
+                {t('nav.callEmergency')}
               </Button>
 
               {/* Mobile Menu Toggle */}
@@ -115,14 +120,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <item.icon className="w-5 h-5" />
-                    {language === 'en' ? item.name : getUrduTranslation(item.name)}
+                    {t(item.name)}
                   </Button>
                 </Link>
               ))}
               <div className="pt-2 border-t">
                 <Button variant="emergency" className="w-full gap-2">
                   <Phone className="w-4 h-4" />
-                  {language === 'en' ? 'Emergency Call 1122' : 'ہنگامی کال ۱۱۲۲'}
+                  {t('nav.emergencyCall')}
                 </Button>
               </div>
             </div>
@@ -149,16 +154,5 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Helper function for Urdu translations
-const getUrduTranslation = (text: string): string => {
-  const translations: Record<string, string> = {
-    'Emergency': 'ہنگامی',
-    'Ambulance': 'ایمبولینس',
-    'Hospitals': 'ہسپتال',
-    'First Aid': 'طبی امداد',
-    'Reports': 'رپورٹس',
-  };
-  return translations[text] || text;
-};
 
 export default Layout;

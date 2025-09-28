@@ -14,7 +14,7 @@ const buttonVariants = cva(
         emergency: "bg-emergency text-emergency-foreground hover:bg-emergency/90 shadow-emergency",
         success: "bg-success text-success-foreground hover:bg-success/90",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90",
-        hero: "bg-gradient-hero text-primary-foreground hover:opacity-90 shadow-primary border border-primary/20",
+        hero: "bg-white/10 text-white border border-white/20 hover:bg-white/20 backdrop-blur-sm",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
