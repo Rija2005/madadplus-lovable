@@ -21,7 +21,7 @@ const translations = {
     'nav.emergencyCall': 'Emergency Call 1122',
     
     // Header
-    'header.title': 'Madadgar-AI',
+    'header.title': 'Madad+',
     'header.subtitle': 'Emergency Response',
     'header.description': 'Pakistan\'s Unified Emergency Response Platform',
     'header.welcome': 'Welcome',
@@ -75,7 +75,7 @@ const translations = {
     'nav.emergencyCall': 'ہنگامی کال ۱۱۲۲',
     
     // Header
-    'header.title': 'مددگار-اے آئی',
+    'header.title': 'مدد+',
     'header.subtitle': 'ہنگامی ردعمل',
     'header.description': 'پاکستان کا متحد ہنگامی ردعمل پلیٹ فارم',
     'header.welcome': 'خوش آمدید',

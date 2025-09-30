@@ -116,7 +116,7 @@ const EmergencyHome = () => {
         <div className="absolute inset-0 bg-gradient-primary/90"></div>
         <div className="relative max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
-            Madadgar-AI
+            Madad+
           </h1>
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8">
             Pakistan's Unified Emergency Response Platform
