@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TextReportDialog } from '@/components/ReportDialog';
+import { VoiceReportDialog } from '@/components/VoiceReportDialog';
+import { MediaUploadDialog } from '@/components/MediaUploadDialog';
 import { 
   Phone, 
   Ambulance, 
@@ -22,6 +25,7 @@ import heroBackground from '@/assets/hero-background.jpg';
 
 const EmergencyHome = () => {
   const [reportType, setReportType] = useState<string | null>(null);
+  const [reportMethod, setReportMethod] = useState<'text' | 'voice' | 'photo' | null>(null);
 
   const emergencyCategories = [
     {
@@ -214,6 +218,7 @@ const EmergencyHome = () => {
                       key={method.id}
                       variant="outline"
                       className="h-24 flex-col gap-2"
+                      onClick={() => setReportMethod(method.id as any)}
                     >
                       <method.icon className="w-6 h-6" />
                       <span className="text-sm">{method.label}</span>
@@ -283,6 +288,23 @@ const EmergencyHome = () => {
           </div>
         </section>
       </div>
+
+      {/* Report Dialogs */}
+      <TextReportDialog 
+        open={reportMethod === 'text'} 
+        onOpenChange={(open) => !open && setReportMethod(null)}
+        reportType={reportType || 'medical'}
+      />
+      <VoiceReportDialog 
+        open={reportMethod === 'voice'} 
+        onOpenChange={(open) => !open && setReportMethod(null)}
+        reportType={reportType || 'medical'}
+      />
+      <MediaUploadDialog 
+        open={reportMethod === 'photo'} 
+        onOpenChange={(open) => !open && setReportMethod(null)}
+        reportType={reportType || 'medical'}
+      />
     </div>
   );
 };

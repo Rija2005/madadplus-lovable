@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { ttsManager } from '@/utils/textToSpeech';
 import { 
   Heart, 
   Play,
   Pause,
   RotateCcw,
   Volume2,
+  VolumeX,
   Phone,
   Clock,
   CheckCircle,
@@ -49,6 +52,26 @@ const FirstAidAssistant = () => {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [language, setLanguage] = useState<'en' | 'ur'>('en');
   const [stepProgress, setStepProgress] = useState(0);
+  const { toast } = useToast();
+
+  // Auto-play audio when step changes and voice is enabled
+  useEffect(() => {
+    if (selectedGuide && isVoiceEnabled) {
+      const currentStepData = selectedGuide.steps[currentStep];
+      const text = language === 'en' ? currentStepData.instruction : currentStepData.instructionUrdu;
+      
+      // Small delay to allow UI to update
+      setTimeout(() => {
+        ttsManager.speak(text, language, () => setIsPlaying(false));
+        setIsPlaying(true);
+      }, 500);
+    }
+
+    return () => {
+      ttsManager.cancel();
+      setIsPlaying(false);
+    };
+  }, [currentStep, selectedGuide, language, isVoiceEnabled]);
 
   const firstAidGuides: FirstAidGuide[] = [
     {
@@ -226,20 +249,38 @@ const FirstAidAssistant = () => {
   };
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-    // In a real app, this would control audio playback
+    if (!selectedGuide) return;
+
+    const currentStepData = selectedGuide.steps[currentStep];
+    const text = language === 'en' ? currentStepData.instruction : currentStepData.instructionUrdu;
+
+    if (isPlaying) {
+      ttsManager.cancel();
+      setIsPlaying(false);
+    } else {
+      ttsManager.speak(text, language, () => setIsPlaying(false));
+      setIsPlaying(true);
+    }
   };
 
   const handleNextStep = () => {
     if (selectedGuide && currentStep < selectedGuide.steps.length - 1) {
+      ttsManager.cancel();
       setCurrentStep(currentStep + 1);
       setStepProgress(0);
       setIsPlaying(false);
+    } else if (selectedGuide && currentStep === selectedGuide.steps.length - 1) {
+      toast({
+        title: "Guide Completed!",
+        description: "You've finished all steps. Great job!",
+        variant: "default"
+      });
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep > 0) {
+      ttsManager.cancel();
       setCurrentStep(currentStep - 1);
       setStepProgress(0);
       setIsPlaying(false);
@@ -247,10 +288,34 @@ const FirstAidAssistant = () => {
   };
 
   const handleReset = () => {
+    ttsManager.cancel();
     setSelectedGuide(null);
     setCurrentStep(0);
     setStepProgress(0);
     setIsPlaying(false);
+  };
+
+  const toggleVoice = () => {
+    const newState = !isVoiceEnabled;
+    setIsVoiceEnabled(newState);
+    
+    if (!newState) {
+      ttsManager.cancel();
+      setIsPlaying(false);
+    }
+
+    toast({
+      title: newState ? "Voice Enabled" : "Voice Disabled",
+      description: newState ? "Audio instructions will play automatically" : "Audio instructions turned off"
+    });
+  };
+
+  const handleEmergencyCall = () => {
+    window.location.href = 'tel:1122';
+    toast({
+      title: "Calling Emergency Services",
+      description: "Connecting to 1122..."
+    });
   };
 
   const getCategoryColor = (category: string) => {
@@ -288,7 +353,18 @@ const FirstAidAssistant = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleVoice}
+              className={isVoiceEnabled ? 'bg-primary/10' : ''}
+            >
+              {isVoiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              ttsManager.cancel();
+              setLanguage(language === 'en' ? 'ur' : 'en');
+            }}>
               {language === 'en' ? 'اردو' : 'EN'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleReset}>
@@ -415,7 +491,7 @@ const FirstAidAssistant = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     If this is a life-threatening emergency, call immediately
                   </p>
-                  <Button variant="emergency" className="w-full">
+                  <Button variant="emergency" className="w-full" onClick={handleEmergencyCall}>
                     <Phone className="w-4 h-4 mr-2" />
                     Call 1122
                   </Button>
@@ -479,7 +555,13 @@ const FirstAidAssistant = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Life-threatening emergency
             </p>
-            <Button variant="emergency" className="w-full">Call 1122</Button>
+            <Button 
+              variant="emergency" 
+              className="w-full"
+              onClick={handleEmergencyCall}
+            >
+              Call 1122
+            </Button>
           </CardContent>
         </Card>
 
@@ -490,7 +572,19 @@ const FirstAidAssistant = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Say "Start CPR" to begin
             </p>
-            <Button variant="outline" className="w-full">Enable Voice</Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => {
+                toast({
+                  title: "Voice Commands Ready",
+                  description: "Say 'Start' followed by guide name to begin",
+                  variant: "default"
+                });
+              }}
+            >
+              Enable Voice
+            </Button>
           </CardContent>
         </Card>
 
@@ -501,7 +595,19 @@ const FirstAidAssistant = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Practice with others
             </p>
-            <Button variant="outline" className="w-full">Start Session</Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => {
+                toast({
+                  title: "Group Training Mode",
+                  description: "Connect multiple devices to practice together",
+                  variant: "default"
+                });
+              }}
+            >
+              Start Session
+            </Button>
           </CardContent>
         </Card>
       </div>

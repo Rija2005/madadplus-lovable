@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Phone, 
@@ -41,6 +43,8 @@ const HospitalConnect = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSpecialty, setFilterSpecialty] = useState<string>('all');
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Mock hospital data
   const hospitals: HospitalData[] = [
@@ -141,6 +145,33 @@ const HospitalConnect = () => {
                             hospital.specialties.includes(filterSpecialty);
     return matchesSearch && matchesSpecialty;
   });
+
+  const handleGetDirections = (hospital: HospitalData) => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.address)}`;
+    window.open(mapsUrl, '_blank');
+    toast({
+      title: "Opening Google Maps",
+      description: `Getting directions to ${hospital.name}`
+    });
+  };
+
+  const handleCallHospital = (hospital: HospitalData) => {
+    window.location.href = `tel:${hospital.phone}`;
+    toast({
+      title: "Calling Hospital",
+      description: `Connecting to ${hospital.name}`
+    });
+  };
+
+  const handleRequestAmbulance = (hospital: HospitalData) => {
+    toast({
+      title: "Redirecting to Ambulance",
+      description: `Requesting ambulance to ${hospital.name}`
+    });
+    setTimeout(() => {
+      navigate('/ambulance');
+    }, 1000);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -327,16 +358,29 @@ const HospitalConnect = () => {
                     
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2 lg:min-w-[200px]">
-                      <Button variant="default" className="w-full">
+                      <Button 
+                        variant="default" 
+                        className="w-full"
+                        onClick={() => handleGetDirections(hospital)}
+                      >
                         <Navigation className="w-4 h-4 mr-2" />
                         Get Directions
                       </Button>
-                      <Button variant="outline" className="w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleCallHospital(hospital)}
+                      >
                         <Phone className="w-4 h-4 mr-2" />
                         Call Hospital
                       </Button>
                       {hospital.hasAmbulance && (
-                        <Button variant="emergency" size="sm" className="w-full">
+                        <Button 
+                          variant="emergency" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => handleRequestAmbulance(hospital)}
+                        >
                           <Car className="w-4 h-4 mr-2" />
                           Request Ambulance
                         </Button>
@@ -390,11 +434,17 @@ const HospitalConnect = () => {
             <AlertCircle className="w-8 h-8 text-emergency mx-auto mb-2" />
             <h3 className="font-semibold text-emergency mb-2">Emergency Contacts</h3>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="emergency">
+              <Button 
+                variant="emergency"
+                onClick={() => window.location.href = 'tel:1122'}
+              >
                 <Phone className="w-4 h-4 mr-2" />
                 Rescue 1122
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/ambulance')}
+              >
                 <Phone className="w-4 h-4 mr-2" />
                 Ambulance Direct
               </Button>
