@@ -127,6 +127,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const savedLanguage = localStorage.getItem('madadgar-language') as 'en' | 'ur';
     if (savedLanguage) {
       setLanguage(savedLanguage);
+      document.documentElement.dir = savedLanguage === 'ur' ? 'rtl' : 'ltr';
+      document.documentElement.lang = savedLanguage;
     }
   }, []);
 
@@ -150,12 +152,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useLanguage = () => {
-  console.log('useLanguage hook called');
   const context = useContext(LanguageContext);
-  console.log('Context value:', context);
   
   if (context === undefined) {
-    console.error('useLanguage must be used within a LanguageProvider - context is undefined');
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;

@@ -19,14 +19,7 @@ import {
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Add debugging to see if context is available
-  console.log('Layout component rendering...');
-  
-  const languageContext = useLanguage();
-  console.log('Language context:', languageContext);
-  
-  const { language, setLanguage, t } = languageContext;
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
 
   const navigation = [
