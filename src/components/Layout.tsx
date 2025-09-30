@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Phone, 
@@ -23,7 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   const navigation = [
-    { name: 'nav.emergency', href: '/', icon: AlertTriangle, color: 'emergency' },
+    { name: 'nav.emergency', href: '/', icon: Home, color: 'emergency' },
     { name: 'nav.ambulance', href: '/ambulance', icon: Ambulance, color: 'primary' },
     { name: 'nav.hospitals', href: '/hospitals', icon: Hospital, color: 'success' },
     { name: 'nav.firstAid', href: '/first-aid', icon: Heart, color: 'warning' },
@@ -139,6 +140,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <main className="flex-1">
         {children}
       </main>
+
+      {/* Offline Indicator */}
+      <OfflineIndicator />
 
       {/* Emergency FAB for mobile */}
       <div className="fixed bottom-6 right-6 z-40 md:hidden">

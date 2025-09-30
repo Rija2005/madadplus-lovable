@@ -11,6 +11,7 @@ import AmbulanceDispatch from "./pages/AmbulanceDispatch";
 import HospitalConnect from "./pages/HospitalConnect";
 import FirstAidAssistant from "./pages/FirstAidAssistant";
 import ReportsPage from "./pages/ReportsPage";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/hospitals" element={<HospitalConnect />} />
                 <Route path="/first-aid" element={<FirstAidAssistant />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -63,6 +63,40 @@ const translations = {
     'firstAid.stroke': 'Stroke Recognition',
     'firstAid.allergicReaction': 'Allergic Reaction',
     'firstAid.seizure': 'Seizure Response',
+    
+    // Dashboard
+    'dashboard.title': 'Emergency Dashboard',
+    'dashboard.subtitle': 'Monitor and manage emergency reports',
+    
+    // Offline
+    'offline.mode': 'Offline Mode',
+    'offline.online': 'Online',
+    'offline.queued': 'queued',
+    'offline.willSync': 'Reports will be sent when online',
+    'offline.connected': 'Connected to server',
+    
+    // Ambulance
+    'ambulance.title': 'Ambulance Dispatch',
+    'ambulance.subtitle': 'Quick medical transport booking',
+    'ambulance.nearYou': 'Available Ambulances Near You',
+    'ambulance.selectSuitable': 'Select the most suitable ambulance',
+    'ambulance.confirmed': 'Ambulance Confirmed!',
+    'ambulance.onTheWay': 'Your ambulance is on the way',
+    
+    // Hospital
+    'hospital.title': 'Hospital Connect',
+    'hospital.subtitle': 'Find nearby medical facilities',
+    'hospital.nearby': 'Nearby Hospitals',
+    'hospital.available': 'Available',
+    'hospital.busy': 'Busy',
+    'hospital.full': 'Full',
+    
+    // Reports
+    'reports.title': 'Crime & Incident Reporting',
+    'reports.subtitle': 'Anonymous reporting for community safety',
+    'reports.new': 'New Report',
+    'reports.history': 'My Reports',
+    'reports.anonymous': 'Anonymous Report',
   },
   ur: {
     // Navigation
@@ -117,6 +151,40 @@ const translations = {
     'firstAid.stroke': 'فالج کی تشخیص',
     'firstAid.allergicReaction': 'الرجک ردعمل',
     'firstAid.seizure': 'مرگی کا دورہ',
+    
+    // Dashboard
+    'dashboard.title': 'ہنگامی ڈیش بورڈ',
+    'dashboard.subtitle': 'ہنگامی رپورٹس کی نگرانی اور انتظام',
+    
+    // Offline
+    'offline.mode': 'آف لائن موڈ',
+    'offline.online': 'آن لائن',
+    'offline.queued': 'قطار میں',
+    'offline.willSync': 'آن لائن ہونے پر رپورٹس بھیجی جائیں گی',
+    'offline.connected': 'سرور سے منسلک',
+    
+    // Ambulance
+    'ambulance.title': 'ایمبولینس ڈسپیچ',
+    'ambulance.subtitle': 'تیز طبی ٹرانسپورٹ بکنگ',
+    'ambulance.nearYou': 'آپ کے قریب دستیاب ایمبولینس',
+    'ambulance.selectSuitable': 'سب سے موزوں ایمبولینس منتخب کریں',
+    'ambulance.confirmed': 'ایمبولینس تصدیق شدہ!',
+    'ambulance.onTheWay': 'آپ کی ایمبولینس راستے میں ہے',
+    
+    // Hospital
+    'hospital.title': 'ہسپتال کنکٹ',
+    'hospital.subtitle': 'قریبی طبی سہولات تلاش کریں',
+    'hospital.nearby': 'قریبی ہسپتال',
+    'hospital.available': 'دستیاب',
+    'hospital.busy': 'مصروف',
+    'hospital.full': 'بھرا ہوا',
+    
+    // Reports
+    'reports.title': 'جرم اور واقعہ کی رپورٹنگ',
+    'reports.subtitle': 'کمیونٹی کی حفاظت کے لیے گمنام رپورٹنگ',
+    'reports.new': 'نئی رپورٹ',
+    'reports.history': 'میری رپورٹس',
+    'reports.anonymous': 'گمنام رپورٹ',
   }
 };
 
