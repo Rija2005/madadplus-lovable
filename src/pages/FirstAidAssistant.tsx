@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   Mic,
   Users,
-  Activity
+  Activity,
+  Flame
 } from 'lucide-react';
 
 interface FirstAidGuide {
@@ -236,6 +237,327 @@ const FirstAidAssistant = () => {
           instructionUrdu: 'پٹی کو مضبوطی سے لیکن زیادہ کسی نہیں بانھیں۔ خون کی گردش چیک کریں۔',
           duration: 30,
           tips: ['Bandage should be snug but fingers/toes should remain pink']
+        }
+      ]
+    },
+    {
+      id: 'burns',
+      title: 'Burn Treatment',
+      titleUrdu: 'جلنے کا علاج',
+      category: 'basic',
+      duration: '5-7 mins',
+      difficulty: 'Easy',
+      description: 'Treat minor and major burns',
+      icon: Flame,
+      steps: [
+        {
+          id: 1,
+          title: 'Stop the Burning',
+          titleUrdu: 'جلنا بند کریں',
+          instruction: 'Remove person from heat source. Remove hot clothing unless stuck to skin.',
+          instructionUrdu: 'شخص کو گرمی کے ذریعے سے ہٹائیں۔ گرم کپڑے ہٹائیں جب تک کہ جلد سے چپکے نہ ہوں۔',
+          duration: 10,
+          warnings: ['Do not apply ice directly', 'Do not break blisters']
+        },
+        {
+          id: 2,
+          title: 'Cool the Burn',
+          titleUrdu: 'جلن کو ٹھنڈا کریں',
+          instruction: 'Hold burn under cool (not cold) running water for 10-20 minutes.',
+          instructionUrdu: 'جلے ہوئے حصے کو ٹھنڈے (بہت ٹھنڈے نہیں) بہتے پانی کے نیچے ۱۰-۲۰ منٹ تک رکھیں۔',
+          duration: 120,
+          tips: ['Use cool water, never ice']
+        },
+        {
+          id: 3,
+          title: 'Cover the Burn',
+          titleUrdu: 'جلن کو ڈھانپیں',
+          instruction: 'Cover with sterile, non-stick bandage or clean cloth. Seek medical help for severe burns.',
+          instructionUrdu: 'جراثیم سے پاک، نہ چپکنے والی پٹی یا صاف کپڑے سے ڈھانپیں۔ شدید جلن کے لیے طبی مدد حاصل کریں۔',
+          duration: 30,
+          warnings: ['Do not apply butter or ointments']
+        }
+      ]
+    },
+    {
+      id: 'fracture',
+      title: 'Fracture Management',
+      titleUrdu: 'ہڈی ٹوٹنے کا انتظام',
+      category: 'advanced',
+      duration: '5-8 mins',
+      difficulty: 'Medium',
+      description: 'Handle broken bones safely',
+      icon: AlertTriangle,
+      steps: [
+        {
+          id: 1,
+          title: 'Do Not Move',
+          titleUrdu: 'حرکت نہ کریں',
+          instruction: 'Keep person still. Do not move injured area. Call emergency services.',
+          instructionUrdu: 'شخص کو ساکن رکھیں۔ زخمی حصے کو نہ ہلائیں۔ ہنگامی خدمات کو کال کریں۔',
+          duration: 15,
+          warnings: ['Do not try to realign bone', 'Do not test if bone is broken']
+        },
+        {
+          id: 2,
+          title: 'Immobilize',
+          titleUrdu: 'متحرک کریں',
+          instruction: 'If help is delayed, splint the area. Use rigid support above and below injury.',
+          instructionUrdu: 'اگر مدد میں تاخیر ہو تو علاقے کو پٹی سے باندھیں۔ زخم کے اوپر اور نیچے سخت سہارا استعمال کریں۔',
+          duration: 60,
+          tips: ['Use rolled newspapers, sticks, or boards as splints']
+        },
+        {
+          id: 3,
+          title: 'Control Swelling',
+          titleUrdu: 'سوجن کو کنٹرول کریں',
+          instruction: 'Apply ice pack wrapped in cloth. Elevate if possible without moving bone.',
+          instructionUrdu: 'کپڑے میں لپٹی برف لگائیں۔ اگر ممکن ہو تو ہڈی کو حرکت دیے بغیر اٹھائیں۔',
+          duration: 10,
+          warnings: ['Never apply ice directly to skin']
+        }
+      ]
+    },
+    {
+      id: 'heart-attack',
+      title: 'Heart Attack Response',
+      titleUrdu: 'دل کے دورے کا ردعمل',
+      category: 'emergency',
+      duration: '3-5 mins',
+      difficulty: 'Advanced',
+      description: 'Recognize and respond to heart attack',
+      icon: Heart,
+      steps: [
+        {
+          id: 1,
+          title: 'Recognize Symptoms',
+          titleUrdu: 'علامات کو پہچانیں',
+          instruction: 'Chest pain/pressure, pain in arm/jaw/back, shortness of breath, nausea, cold sweat.',
+          instructionUrdu: 'سینے میں درد/دباؤ، بازو/جبڑے/پیٹھ میں درد، سانس کی قلت، متلی، ٹھنڈا پسینہ۔',
+          duration: 10,
+          warnings: ['Symptoms can be different in women']
+        },
+        {
+          id: 2,
+          title: 'Call Emergency',
+          titleUrdu: 'ایمرجنسی کال کریں',
+          instruction: 'Call 1122 immediately. Do not wait. Time is critical.',
+          instructionUrdu: 'فوری طور پر ۱۱۲۲ کو کال کریں۔ انتظار نہ کریں۔ وقت اہم ہے۔',
+          duration: 10,
+          tips: ['Have someone call while you help the person']
+        },
+        {
+          id: 3,
+          title: 'Help Person Rest',
+          titleUrdu: 'شخص کو آرام کریں',
+          instruction: 'Have person sit or lie down. Loosen tight clothing. Keep calm and reassuring.',
+          instructionUrdu: 'شخص کو بیٹھائیں یا لٹائیں۔ تنگ کپڑے ڈھیلے کریں۔ پرسکون اور یقین دلانے والے رہیں۔',
+          duration: 30,
+          tips: ['Give aspirin if available and no allergies']
+        },
+        {
+          id: 4,
+          title: 'Monitor Until Help Arrives',
+          titleUrdu: 'مدد آنے تک نگرانی کریں',
+          instruction: 'Stay with person. Be ready to perform CPR if they lose consciousness.',
+          instructionUrdu: 'شخص کے ساتھ رہیں۔ اگر بے ہوش ہوں تو سی پی آر کرنے کے لیے تیار رہیں۔',
+          duration: 120,
+          warnings: ['Do not give food or water']
+        }
+      ]
+    },
+    {
+      id: 'drowning',
+      title: 'Drowning Response',
+      titleUrdu: 'ڈوبنے کا ردعمل',
+      category: 'emergency',
+      duration: '5-8 mins',
+      difficulty: 'Advanced',
+      description: 'Rescue and revive drowning victim',
+      icon: Activity,
+      steps: [
+        {
+          id: 1,
+          title: 'Safe Rescue',
+          titleUrdu: 'محفوظ بچاؤ',
+          instruction: 'Only enter water if trained. Reach with object, throw rope, or use boat.',
+          instructionUrdu: 'صرف تربیت یافتہ ہونے پر پانی میں داخل ہوں۔ کسی چیز سے پہنچیں، رسی پھینکیں، یا کشتی استعمال کریں۔',
+          duration: 30,
+          warnings: ['Your safety comes first - do not become victim']
+        },
+        {
+          id: 2,
+          title: 'Check Responsiveness',
+          titleUrdu: 'ردعمل چیک کریں',
+          instruction: 'Once safe, check if person is breathing and responsive.',
+          instructionUrdu: 'محفوظ ہونے کے بعد، چیک کریں کہ آیا شخص سانس لے رہا ہے اور جواب دے رہا ہے۔',
+          duration: 10,
+          tips: ['Call 1122 immediately']
+        },
+        {
+          id: 3,
+          title: 'Begin CPR',
+          titleUrdu: 'سی پی آر شروع کریں',
+          instruction: 'If not breathing, start CPR immediately. 30 compressions, 2 breaths.',
+          instructionUrdu: 'اگر سانس نہیں لے رہے تو فوری طور پر سی پی آر شروع کریں۔ ۳۰ دبانے، ۲ سانس۔',
+          duration: 120,
+          warnings: ['Continue until help arrives or person breathes']
+        }
+      ]
+    },
+    {
+      id: 'electric-shock',
+      title: 'Electric Shock Response',
+      titleUrdu: 'بجلی کے جھٹکے کا ردعمل',
+      category: 'emergency',
+      duration: '3-5 mins',
+      difficulty: 'Medium',
+      description: 'Help electric shock victim safely',
+      icon: AlertTriangle,
+      steps: [
+        {
+          id: 1,
+          title: 'Turn Off Power',
+          titleUrdu: 'بجلی بند کریں',
+          instruction: 'Do not touch person. Turn off power source first or use non-conducting object to separate.',
+          instructionUrdu: 'شخص کو نہ چھوئیں۔ پہلے بجلی کا ذریعہ بند کریں یا نہ چلنے والی چیز استعمال کر کے الگ کریں۔',
+          duration: 10,
+          warnings: ['Never touch with bare hands while power is on']
+        },
+        {
+          id: 2,
+          title: 'Call Emergency',
+          titleUrdu: 'ایمرجنسی کال کریں',
+          instruction: 'Call 1122 immediately, even if person seems fine.',
+          instructionUrdu: 'فوری طور پر ۱۱۲۲ کو کال کریں، چاہے شخص ٹھیک نظر آئے۔',
+          duration: 10,
+          tips: ['Electric shock can cause internal injuries']
+        },
+        {
+          id: 3,
+          title: 'Check and Care',
+          titleUrdu: 'چیک اور دیکھ بھال کریں',
+          instruction: 'Check breathing. If not breathing, begin CPR. Cover burns with sterile dressing.',
+          instructionUrdu: 'سانس چیک کریں۔ اگر سانس نہیں لے رہے تو سی پی آر شروع کریں۔ جلنے کو جراثیم سے پاک ڈریسنگ سے ڈھانپیں۔',
+          duration: 60,
+          warnings: ['Do not move person unless necessary']
+        }
+      ]
+    },
+    {
+      id: 'unconscious',
+      title: 'Unconscious Person Care',
+      titleUrdu: 'بے ہوش شخص کی دیکھ بھال',
+      category: 'emergency',
+      duration: '3-5 mins',
+      difficulty: 'Medium',
+      description: 'Handle unconscious person',
+      icon: AlertTriangle,
+      steps: [
+        {
+          id: 1,
+          title: 'Check Response',
+          titleUrdu: 'ردعمل چیک کریں',
+          instruction: 'Tap shoulders, shout loudly. Check if person responds.',
+          instructionUrdu: 'کندھوں کو تھپتھپائیں، زور سے پکاریں۔ چیک کریں کہ آیا شخص جواب دیتا ہے۔',
+          duration: 10,
+          warnings: ['Do not shake if spinal injury suspected']
+        },
+        {
+          id: 2,
+          title: 'Open Airway',
+          titleUrdu: 'ہوا کا راستہ کھولیں',
+          instruction: 'Tilt head back, lift chin. Check for normal breathing for 10 seconds.',
+          instructionUrdu: 'سر پیچھے کریں، ٹھوڑی اٹھائیں۔ ۱۰ سیکنڈ تک عام سانس کی جانچ کریں۔',
+          duration: 10,
+          tips: ['Look for chest rise, listen for breathing']
+        },
+        {
+          id: 3,
+          title: 'Recovery Position',
+          titleUrdu: 'بحالی کی پوزیشن',
+          instruction: 'If breathing normally, place in recovery position. Call 1122.',
+          instructionUrdu: 'اگر عام طور پر سانس لے رہے ہیں تو بحالی کی پوزیشن میں رکھیں۔ ۱۱۲۲ کو کال کریں۔',
+          duration: 30,
+          tips: ['This prevents choking on vomit']
+        }
+      ]
+    },
+    {
+      id: 'snake-bite',
+      title: 'Snake Bite Treatment',
+      titleUrdu: 'سانپ کے کاٹنے کا علاج',
+      category: 'advanced',
+      duration: '5-7 mins',
+      difficulty: 'Medium',
+      description: 'Treat venomous snake bites',
+      icon: AlertTriangle,
+      steps: [
+        {
+          id: 1,
+          title: 'Move to Safety',
+          titleUrdu: 'حفاظت کی طرف منتقل ہوں',
+          instruction: 'Move away from snake. Try to remember snake appearance for medical team.',
+          instructionUrdu: 'سانپ سے دور ہوں۔ طبی ٹیم کے لیے سانپ کی شکل یاد رکھنے کی کوشش کریں۔',
+          duration: 10,
+          warnings: ['Do not try to catch or kill snake']
+        },
+        {
+          id: 2,
+          title: 'Keep Calm and Still',
+          titleUrdu: 'پرسکون اور ساکن رہیں',
+          instruction: 'Keep bitten area below heart level. Minimize movement to slow venom spread.',
+          instructionUrdu: 'کاٹے گئے حصے کو دل کی سطح سے نیچے رکھیں۔ زہر کے پھیلاؤ کو سست کرنے کے لیے حرکت کم کریں۔',
+          duration: 30,
+          tips: ['Remove tight clothing and jewelry near bite']
+        },
+        {
+          id: 3,
+          title: 'Call Emergency',
+          titleUrdu: 'ایمرجنسی کال کریں',
+          instruction: 'Call 1122 immediately. Get to hospital as fast as possible for anti-venom.',
+          instructionUrdu: 'فوری طور پر ۱۱۲۲ کو کال کریں۔ اینٹی وینم کے لیے جتنی جلدی ممکن ہو ہسپتال پہنچیں۔',
+          duration: 10,
+          warnings: ['Do not apply tourniquet', 'Do not cut wound', 'Do not suck venom']
+        }
+      ]
+    },
+    {
+      id: 'heat-stroke',
+      title: 'Heat Stroke Treatment',
+      titleUrdu: 'لو لگنے کا علاج',
+      category: 'emergency',
+      duration: '5-7 mins',
+      difficulty: 'Medium',
+      description: 'Treat severe heat exhaustion',
+      icon: Flame,
+      steps: [
+        {
+          id: 1,
+          title: 'Move to Cool Area',
+          titleUrdu: 'ٹھنڈے علاقے میں منتقل ہوں',
+          instruction: 'Get person to shaded or air-conditioned area immediately.',
+          instructionUrdu: 'فوری طور پر شخص کو سایہ دار یا ایئر کنڈیشنڈ علاقے میں لے جائیں۔',
+          duration: 10,
+          warnings: ['Heat stroke is life-threatening']
+        },
+        {
+          id: 2,
+          title: 'Cool the Body',
+          titleUrdu: 'جسم کو ٹھنڈا کریں',
+          instruction: 'Remove excess clothing. Apply cool wet cloths. Fan continuously.',
+          instructionUrdu: 'اضافی کپڑے ہٹائیں۔ ٹھنڈے گیلے کپڑے لگائیں۔ مسلسل پنکھا کریں۔',
+          duration: 60,
+          tips: ['Apply ice packs to neck, armpits, groin']
+        },
+        {
+          id: 3,
+          title: 'Give Fluids',
+          titleUrdu: 'سیال دیں',
+          instruction: 'If conscious, give cool water to sip. Call 1122 immediately.',
+          instructionUrdu: 'اگر ہوش میں ہوں تو ٹھنڈا پانی گھونٹ گھونٹ کر دیں۔ فوری طور پر ۱۱۲۲ کو کال کریں۔',
+          duration: 30,
+          warnings: ['Do not give fluids if unconscious']
         }
       ]
     }

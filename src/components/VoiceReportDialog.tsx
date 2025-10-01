@@ -19,12 +19,32 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
   const [transcribing, setTranscribing] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [location, setLocation] = useState('');
+  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   
   const { toast } = useToast();
+
+  // Fetch location on mount
+  useState(() => {
+    if (open && !coordinates) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setCoordinates({ latitude, longitude });
+            setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          },
+          () => {
+            setLocation('Location unavailable');
+          }
+        );
+      }
+    }
+  });
 
   const startRecording = async () => {
     try {
@@ -138,7 +158,9 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
       description: transcription || 'Voice message attached',
       voiceTranscription: transcription,
       location: {
-        address: 'Location auto-detected'
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
+        address: location || 'Location auto-detected'
       },
       timestamp: new Date(),
       status: 'submitted',

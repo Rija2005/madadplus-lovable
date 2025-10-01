@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +20,47 @@ export const TextReportDialog = ({ open, onOpenChange, reportType, initialDescri
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState(initialDescription || '');
   const [location, setLocation] = useState('');
+  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
   const { toast } = useToast();
+
+  // Fetch location on mount
+  React.useEffect(() => {
+    if (open && !coordinates) {
+      fetchLocation();
+    }
+  }, [open]);
+
+  const fetchLocation = () => {
+    setFetchingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCoordinates({ latitude, longitude });
+          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          setFetchingLocation(false);
+          toast({
+            title: "Location Detected",
+            description: "Your location has been captured"
+          });
+        },
+        (error) => {
+          setFetchingLocation(false);
+          setLocation('Location unavailable - Please enter manually');
+          toast({
+            title: "Location Access Denied",
+            description: "Please enter your location manually",
+            variant: "destructive"
+          });
+        }
+      );
+    } else {
+      setFetchingLocation(false);
+      setLocation('Geolocation not supported');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!title || !description) {
@@ -39,6 +79,8 @@ export const TextReportDialog = ({ open, onOpenChange, reportType, initialDescri
       title,
       description,
       location: {
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
         address: location || 'Location auto-detected'
       },
       timestamp: new Date(),
@@ -99,11 +141,20 @@ export const TextReportDialog = ({ open, onOpenChange, reportType, initialDescri
               <MapPin className="w-4 h-4 text-muted-foreground" />
               <Input
                 id="location"
-                placeholder="Auto-detected or enter manually"
+                placeholder={fetchingLocation ? "Detecting location..." : "Auto-detected or enter manually"}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                disabled={fetchingLocation}
               />
+              {!fetchingLocation && !coordinates && (
+                <Button size="sm" variant="outline" onClick={fetchLocation}>
+                  Retry
+                </Button>
+              )}
             </div>
+            {coordinates && (
+              <p className="text-xs text-success mt-1">✓ Location captured</p>
+            )}
           </div>
 
           <div>

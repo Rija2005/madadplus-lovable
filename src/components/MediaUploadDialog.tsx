@@ -20,8 +20,28 @@ export const MediaUploadDialog = ({ open, onOpenChange, reportType }: MediaUploa
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState('');
+  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Fetch location on mount
+  useState(() => {
+    if (open && !coordinates) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setCoordinates({ latitude, longitude });
+            setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          },
+          () => {
+            setLocation('Location unavailable');
+          }
+        );
+      }
+    }
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -74,7 +94,9 @@ export const MediaUploadDialog = ({ open, onOpenChange, reportType }: MediaUploa
       title,
       description: description || 'Media attached',
       location: {
-        address: 'Location auto-detected'
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
+        address: location || 'Location auto-detected'
       },
       media: {
         photos: files.filter(f => f.type.startsWith('image/')),
