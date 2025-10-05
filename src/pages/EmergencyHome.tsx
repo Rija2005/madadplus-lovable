@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TextReportDialog } from '@/components/ReportDialog';
-import { VoiceReportDialog } from '@/components/VoiceReportDialog';
-import { MediaUploadDialog } from '@/components/MediaUploadDialog';
-import { 
-  Phone, 
-  Ambulance, 
-  Hospital, 
+
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Phone,
+  Ambulance,
+  Hospital,
   Heart,
   Shield,
   Flame,
@@ -19,294 +23,251 @@ import {
   Mic,
   FileText,
   MapPin,
-  Clock
-} from 'lucide-react';
-import heroBackground from '@/assets/hero-background.jpg';
+  Clock,
+} from "lucide-react";
+import ReportDialog from "@/components/ReportDialog";
+import { VoiceReportDialog } from "@/components/VoiceReportDialog";
+import { MediaUploadDialog } from "@/components/MediaUploadDialog";
 
-const EmergencyHome = () => {
+
+import heroBackground from "@/assets/hero-background.jpg";
+
+// Firebase imports
+import { auth, db } from "../firebase";
+import { signInAnonymously } from "firebase/auth";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+export const EmergencyHome = () => {
   const [reportType, setReportType] = useState<string | null>(null);
-  const [reportMethod, setReportMethod] = useState<'text' | 'voice' | 'photo' | null>(null);
+  const [reportMethod, setReportMethod] = useState<
+    "text" | "voice" | "photo" | null
+  >(null);
 
-  const emergencyCategories = [
-    {
-      id: 'medical',
-      title: 'Medical Emergency',
-      titleUrdu: 'طبی ہنگامی',
-      description: 'Health emergencies, injuries, accidents',
-      descriptionUrdu: 'صحت کی ہنگامی حالت، زخم، حادثات',
-      icon: Heart,
-      color: 'emergency',
-      bgColor: 'bg-emergency/10',
-      examples: ['Heart Attack', 'Accident', 'Unconscious', 'Severe Pain']
-    },
-    {
-      id: 'fire',
-      title: 'Fire Emergency',
-      titleUrdu: 'آگ کی ہنگامی',
-      description: 'Fire, gas leak, explosion',
-      descriptionUrdu: 'آگ، گیس لیک، دھماکہ',
-      icon: Flame,
-      color: 'warning',
-      bgColor: 'bg-warning/10',
-      examples: ['Building Fire', 'Gas Leak', 'Explosion', 'Smoke']
-    },
-    {
-      id: 'crime',
-      title: 'Crime/Security',
-      titleUrdu: 'جرم/سیکیورٹی',
-      description: 'Theft, violence, suspicious activity',
-      descriptionUrdu: 'چوری، تشدد، مشکوک سرگرمی',
-      icon: Shield,
-      color: 'destructive',
-      bgColor: 'bg-destructive/10',
-      examples: ['Theft', 'Violence', 'Suspicious Person', 'Break-in']
-    },
-    {
-      id: 'traffic',
-      title: 'Traffic/Road',
-      titleUrdu: 'ٹریفک/سڑک',
-      description: 'Road accidents, traffic issues',
-      descriptionUrdu: 'سڑک حادثات، ٹریفک مسائل',
-      icon: Car,
-      color: 'primary',
-      bgColor: 'bg-primary/10',
-      examples: ['Car Accident', 'Road Block', 'Traffic Jam', 'Vehicle Issue']
+  // 🔐 Auto sign-in user anonymously
+  useEffect(() => {
+    if (!auth.currentUser) {
+      signInAnonymously(auth).catch((err) =>
+        console.error("Anonymous sign-in failed:", err)
+      );
     }
-  ];
+  }, []);
 
+  // 🚨 Handle submit to Firestore
+  const handleSubmitReport = async () => {
+    if (!reportType || !reportMethod) {
+      alert("Please select type and method");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "reports"), {
+        type: reportType,
+        method: reportMethod,
+        createdAt: serverTimestamp(),
+      });
+      alert("✅ Emergency Report Submitted!");
+      setReportMethod(null);
+      setReportType(null);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to submit report");
+    }
+  };
+
+  // Emergency categories
+// Emergency categories
+const emergencyCategories = [
+  { 
+    icon: Flame, 
+    title: <>Fire Emergency <span className="text-sm text-gray-500">(آگ لگ گئی ہے)</span></>, 
+    type: "fire", 
+    color: "bg-red-100" 
+  },
+  { 
+    icon: Shield, 
+    title: <>Crime / Police Help <span className="text-sm text-gray-500">(جرم/پولیس مدد)</span></>, 
+    type: "crime", 
+    color: "bg-blue-100" 
+  },
+  { 
+    icon: Heart, 
+    title: <>Medical Emergency <span className="text-sm text-gray-500">(طبی ایمرجنسی)</span></>, 
+    type: "medical", 
+    color: "bg-green-100" 
+  },
+  { 
+    icon: Car, 
+    title: <>Accident <span className="text-sm text-gray-500">(حادثہ)</span></>, 
+    type: "accident", 
+    color: "bg-yellow-100" 
+  },
+];
+
+  // Quick actions
   const quickActions = [
+    { icon: Phone, title: "Rescue 1122", href: "tel:1122", color: "bg-red-500" },
     {
-      title: 'Call Ambulance',
-      titleUrdu: 'ایمبولینس بلائیں',
-      description: 'Book emergency transport',
-      descriptionUrdu: 'ہنگامی ٹرانسپورٹ بک کریں',
       icon: Ambulance,
-      href: '/ambulance',
-      variant: 'emergency' as const
+      title: "Request Ambulance",
+      href: "/ambulance",
+      color: "bg-green-500",
     },
     {
-      title: 'Find Hospitals',
-      titleUrdu: 'ہسپتال تلاش کریں',
-      description: 'Nearby medical facilities',
-      descriptionUrdu: 'قریبی طبی سہولات',
       icon: Hospital,
-      href: '/hospitals',
-      variant: 'success' as const
+      title: "Hospitals",
+      href: "/hospitals",
+      color: "bg-blue-500",
     },
-    {
-      title: 'First Aid Guide',
-      titleUrdu: 'طبی امداد گائیڈ',
-      description: 'Emergency medical help',
-      descriptionUrdu: 'ہنگامی طبی مدد',
-      icon: Heart,
-      href: '/first-aid',
-      variant: 'warning' as const
-    }
   ];
 
   const reportMethods = [
-    { id: 'text', icon: FileText, label: 'Text Report', labelUrdu: 'متنی رپورٹ' },
-    { id: 'voice', icon: Mic, label: 'Voice Message', labelUrdu: 'صوتی پیغام' },
-    { id: 'photo', icon: Camera, label: 'Photo/Video', labelUrdu: 'تصویر/ویڈیو' },
+      { id: 'text', icon: FileText, title: 'Text' },
+      { id: 'voice', icon: Mic, title: 'Voice' },
+      { id: 'photo', icon: Camera, title: 'Photo/Video' },
   ];
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section 
-        className="relative py-20 px-4 text-center bg-gradient-hero bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBackground})` }}
+      {/* 🌟 Hero Section */}
+      <div
+        className="relative h-[40vh] flex items-center justify-center text-center text-white"
+        style={{
+          backgroundImage: `url(${heroBackground})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        <div className="absolute inset-0 bg-gradient-primary/90"></div>
-        <div className="relative max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
-            Madad+
-          </h1>
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8">
-            Pakistan's Unified Emergency Response Platform
-          </p>
-          <p className="text-lg text-primary-foreground/80 mb-10">
-            خوش آمدید • پاکستان کا متحد ہنگامی ردعمل پلیٹ فارم
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button variant="emergency" size="lg" className="text-lg px-8 py-4">
-              <Phone className="w-6 h-6 mr-2" />
-              Emergency Call 1122
-            </Button>
-            <Button variant="hero" size="lg" className="text-lg px-8 py-4">
-              <AlertTriangle className="w-6 h-6 mr-2" />
-              Report Incident
-            </Button>
-          </div>
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative z-10 max-w-2xl px-4">
+        <h1 className="text-4xl md:text-5xl font-bold mb-2">Madad+</h1>
+  <p className="text-lg md:text-xl">
+    Your Emergency Assistant for Instant Help{" "}
+    <span className="text-sm text-gray-500">(مدد کے لیے آپ کا ایمرجنسی اسسٹنٹ)</span>
+  </p>
         </div>
-      </section>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Quick Actions */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Quick Emergency Actions</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {quickActions.map((action) => (
-              <Link key={action.title} to={action.href}>
-                <Card className="hover:shadow-primary transition-all duration-300 h-full">
-                  <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 mx-auto rounded-full bg-${action.variant}/10 flex items-center justify-center mb-4`}>
-                      <action.icon className={`w-8 h-8 text-${action.variant}`} />
-                    </div>
-                    <CardTitle className="text-xl">{action.title}</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground">
-                      {action.titleUrdu}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-foreground">{action.description}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{action.descriptionUrdu}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* 🚀 Quick Actions */}
+        <div className="grid grid-cols-3 gap-4">
+          {quickActions.map((action) => (
+            <Link
+              key={action.title}
+              to={action.href}
+              className={`flex flex-col items-center justify-center p-4 rounded-lg text-white shadow-md hover:shadow-lg transition-all ${action.color}`}
 
-        {/* Emergency Categories */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Report Emergency</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {emergencyCategories.map((category) => (
-              <Card 
-                key={category.id}
-                className={`cursor-pointer transition-all duration-300 hover:shadow-primary ${
-                  reportType === category.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setReportType(category.id)}
+            >
+              <div
+                className={`p-3 rounded-full ${action.color} text-white mb-2`}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className={`w-16 h-16 mx-auto rounded-full ${category.bgColor} flex items-center justify-center mb-4`}>
-                    <category.icon className={`w-8 h-8 text-${category.color}`} />
-                  </div>
-                  <CardTitle className="text-lg">{category.title}</CardTitle>
-                  <CardDescription className="text-sm">{category.titleUrdu}</CardDescription>
+                <action.icon className="w-6 h-6" />
+              </div>
+              <span className="text-sm text-center">{action.title}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* 🆘 Emergency Categories */}
+        <div className="grid grid-cols-2 gap-4">
+          {emergencyCategories.map((category) => (
+            <Card
+              key={category.type}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => setReportType(category.type)}
+            >
+              <CardHeader className="flex flex-row items-center gap-4">
+                <div className={`p-3 rounded-full ${category.color}`}>
+                  <category.icon className="w-6 h-6" />
+                </div>
+                <CardTitle>{category.title}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        {/* ✍ Report Methods */}
+        {reportType && (
+          <div className="grid grid-cols-3 gap-4">
+            {reportMethods.map((method) => (
+              <Card
+                key={method.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow h-full"
+                onClick={() => setReportMethod(method.id as 'text' | 'voice' | 'photo')}
+              >
+                <CardHeader className="flex flex-col items-center text-center">
+                  <method.icon className="w-8 h-8 mb-2" />
+                  <CardTitle>{method.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {category.examples.slice(0, 2).map((example) => (
-                      <Badge key={example} variant="secondary" className="text-xs">
-                        {example}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
               </Card>
             ))}
           </div>
+        )}
 
-          {/* Report Methods */}
-          {reportType && (
-            <Card className="max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle className="text-center">How would you like to report?</CardTitle>
-                <CardDescription className="text-center">
-                  آپ کیسے رپورٹ کرنا چاہیں گے؟
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {reportMethods.map((method) => (
-                    <Button
-                      key={method.id}
-                      variant="outline"
-                      className="h-24 flex-col gap-2"
-                      onClick={() => setReportMethod(method.id as any)}
-                    >
-                      <method.icon className="w-6 h-6" />
-                      <span className="text-sm">{method.label}</span>
-                      <span className="text-xs text-muted-foreground">{method.labelUrdu}</span>
-                    </Button>
-                  ))}
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>Location will be automatically detected</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span>Emergency services will be notified immediately</span>
-                  </div>
-                </div>
+        {/* Render Controlled Dialogs */}
+        <ReportDialog
+          open={reportMethod === 'text'}
+          onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
+        />
+        <VoiceReportDialog
+          open={reportMethod === 'voice'}
+          onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
+          reportType={reportType!}
+        />
+        <MediaUploadDialog
+          open={reportMethod === 'photo'}
+          onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
+          reportType={reportType!}
+        />
 
-                <Button variant="emergency" className="w-full mt-6" size="lg">
-                  <AlertTriangle className="w-5 h-5 mr-2" />
-                  Submit Emergency Report
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </section>
+        {/* 🚨 Submit Button */}
+        {reportType && reportMethod && (
+          <Button
+            variant="emergency"
+            className="w-full mt-6"
+            size="lg"
+            onClick={handleSubmitReport}
+          >
+            <AlertTriangle className="w-5 h-5 mr-2" />
+            Submit Emergency Report
+          </Button>
+        )}
 
-        {/* Status Indicators */}
-        <section>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Available Ambulances</p>
-                    <p className="text-2xl font-bold text-success">24</p>
-                  </div>
-                  <Ambulance className="w-8 h-8 text-success" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Hospitals</p>
-                    <p className="text-2xl font-bold text-primary">18</p>
-                  </div>
-                  <Hospital className="w-8 h-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Response Time</p>
-                    <p className="text-2xl font-bold text-warning">8 min</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-warning" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+        {/* 📊 Status Indicators */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
+              <CardDescription>Current emergency stats</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span>Rescue Teams</span>
+                <Badge variant="outline">Active</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Response Time</span>
+                <Badge variant="secondary">
+                  <Clock className="w-4 h-4 mr-1" /> 5 min
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Location</CardTitle>
+              <CardDescription>Detected via GPS</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              <span>Karachi, Pakistan</span>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Report Dialogs */}
-      <TextReportDialog 
-        open={reportMethod === 'text'} 
-        onOpenChange={(open) => !open && setReportMethod(null)}
-        reportType={reportType || 'medical'}
-      />
-      <VoiceReportDialog 
-        open={reportMethod === 'voice'} 
-        onOpenChange={(open) => !open && setReportMethod(null)}
-        reportType={reportType || 'medical'}
-      />
-      <MediaUploadDialog 
-        open={reportMethod === 'photo'} 
-        onOpenChange={(open) => !open && setReportMethod(null)}
-        reportType={reportType || 'medical'}
-      />
     </div>
   );
 };
-
-export default EmergencyHome;

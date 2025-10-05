@@ -1,0 +1,23 @@
+{
+  "rules": {
+    // Rules for ambulance_requests node
+    "ambulance_requests": {
+      // Index on userId to allow efficient querying of a user's requests
+      ".indexOn": ["userId"],
+      // Requests can be read by any authenticated user, but are filtered on the client
+      ".read": "auth != null",
+      // Any authenticated user can create a new request
+      ".write": "auth != null",
+
+      // Individual request nodes ($requestId)
+      "$requestId": {
+        // A user can only write/update a request if they are the one who created it
+        // or if the data doesn't exist yet (for creation)
+        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)",
+        // A user can only read a request if they are the one who created it
+        ".read": "auth != null && data.child('userId').val() === auth.uid"
+firebase functions:config:set gemini.key="YOUR_API_KEY"
+      }
+    }
+  }
+}

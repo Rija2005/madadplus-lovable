@@ -6,13 +6,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from '@/contexts/ThemeProvider';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import Layout from "./components/Layout";
-import EmergencyHome from "./pages/EmergencyHome";
+import {EmergencyHome}from "./pages/EmergencyHome";
 import AmbulanceDispatch from "./pages/AmbulanceDispatch";
 import HospitalConnect from "./pages/HospitalConnect";
 import FirstAidAssistant from "./pages/FirstAidAssistant";
 import ReportsPage from "./pages/ReportsPage";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import { AdminDashboard } from "./pages/AdminDashboard"; // 🔥 Added for admin
 
 const queryClient = new QueryClient();
 
@@ -32,7 +33,8 @@ const App = () => (
                 <Route path="/first-aid" element={<FirstAidAssistant />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/admin" element={<AdminDashboard />} /> {/* ✅ New admin panel */}
+                {/* Catch-all for 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Reports: Users can create their own reports and manage them.
+    match /reports/{reportId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Ambulance Reports: Authenticated users can create and manage their own reports.
+    match /ambulanceReports/{reportId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Ambulance Bookings: Authenticated users can create and manage their own bookings.
+    match /ambulanceBookings/{bookingId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Ambulances: Authenticated users can read the list. They can also update an ambulance's status, which is required for the booking process.
+    match /ambulances/{ambulanceId} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null; // Necessary to change status from 'available' to 'busy'
+    }
+
+    // Drivers: Authenticated users can read driver information.
+    match /drivers/{driverId} {
+      allow read: if request.auth != null;
+    }
+
+    // Hospitals: Authenticated users can read the list of hospitals.
+    match /hospitals/{hospitalId} {
+      allow read: if request.auth != null;
+    }
+  }
+}

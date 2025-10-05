@@ -1,51 +1,76 @@
-import { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { submitEmergencyReport, EmergencyReport, transcribeVoice } from '@/services/backendHooks';
-import { Mic, Square, Play, Pause, Loader2, Trash2, Send } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import {
+  submitEmergencyReport,
+  EmergencyReport,
+  transcribeVoice,
+  callAmbulance,
+} from "@/services/backendHooks";
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  Loader2,
+  Trash2,
+  Send,
+  Ambulance,
+} from "lucide-react";
 
-interface VoiceReportDialogProps {
+export interface VoiceReportDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (isOpen: boolean) => void;
   reportType: string;
 }
 
-export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceReportDialogProps) => {
+export const VoiceReportDialog: React.FC<VoiceReportDialogProps> = ({
+  open,
+  onOpenChange,
+  reportType,
+}) => {
   const [recording, setRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string>('');
+  const [audioUrl, setAudioUrl] = useState("");
   const [playing, setPlaying] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  const [transcription, setTranscription] = useState('');
+  const [transcription, setTranscription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [location, setLocation] = useState('');
-  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
-  
+  const [location, setLocation] = useState("");
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  
   const { toast } = useToast();
 
-  // Fetch location on mount
-  useState(() => {
+  // 📍 Fetch location on open
+  useEffect(() => {
     if (open && !coordinates) {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
             setCoordinates({ latitude, longitude });
             setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
           },
-          () => {
-            setLocation('Location unavailable');
-          }
+          () => setLocation("Location unavailable")
         );
       }
     }
-  });
+  }, [open]);
 
+  // 🎙 Start recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -54,31 +79,27 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
       chunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         setAudioBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
-        stream.getTracks().forEach(track => track.stop());
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach((t) => t.stop());
       };
 
       mediaRecorder.start();
       setRecording(true);
-      
       toast({
         title: "Recording Started",
-        description: "Speak clearly about the emergency"
+        description: "Speak clearly about the emergency",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Microphone Access Denied",
         description: "Please allow microphone access to record",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -89,7 +110,7 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
       setRecording(false);
       toast({
         title: "Recording Stopped",
-        description: "You can now play or transcribe your message"
+        description: "You can now play or transcribe your message",
       });
     }
   };
@@ -109,35 +130,22 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
 
   const deleteRecording = () => {
     setAudioBlob(null);
-    setAudioUrl('');
-    setTranscription('');
+    setAudioUrl("");
+    setTranscription("");
     setPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    audioRef.current?.pause();
   };
 
   const handleTranscribe = async () => {
     if (!audioBlob) return;
-
     setTranscribing(true);
-    const file = new File([audioBlob], 'voice-report.webm', { type: 'audio/webm' });
-    const result = await transcribeVoice(file);
+    const result = await transcribeVoice(audioBlob);
     setTranscribing(false);
-
-    if (result.success && result.transcription) {
-      setTranscription(result.transcription);
-      toast({
-        title: "Transcription Complete",
-        description: "Voice converted to text successfully"
-      });
-    } else {
-      toast({
-        title: "Transcription Failed",
-        description: result.error || "Please try again",
-        variant: "destructive"
-      });
-    }
+    setTranscription(result);
+    toast({
+      title: "Transcription Complete",
+      description: "Voice converted to text successfully",
+    });
   };
 
   const handleSubmit = async () => {
@@ -145,45 +153,50 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
       toast({
         title: "No Recording",
         description: "Please record a voice message first",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setSubmitting(true);
 
-    const report: EmergencyReport = {
-      type: reportType as any,
-      title: 'Voice Report',
-      description: transcription || 'Voice message attached',
-      voiceTranscription: transcription,
+    const report: Omit<EmergencyReport, "id" | "timestamp" | "status" | "userId"> = {
+      type: reportType,
+      title: "Voice Report",
+      description: transcription || "Voice message attached",
+      priority: "high",
+      isAnonymous: false,
       location: {
         latitude: coordinates?.latitude,
         longitude: coordinates?.longitude,
-        address: location || 'Location auto-detected'
+        address: location || "Auto-detected location",
       },
-      timestamp: new Date(),
-      status: 'submitted',
-      priority: 'high',
-      isAnonymous: false
     };
 
     const result = await submitEmergencyReport(report);
     setSubmitting(false);
 
-    if (result.success) {
+    if (result.success && result.reportId) {
       toast({
-        title: "Report Submitted!",
+        title: "Report Submitted",
         description: `Report ID: ${result.reportId}. Emergency services notified.`,
-        variant: "default"
       });
+
+      const ambResult = await callAmbulance(result.reportId);
+      if (ambResult.success) {
+        toast({
+          title: "Ambulance Dispatched 🚑",
+          description: `Ambulance ID: ${ambResult.ambulanceId}`,
+        });
+      }
+
       deleteRecording();
       onOpenChange(false);
     } else {
       toast({
         title: "Submission Failed",
         description: result.error || "Please try again",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -202,7 +215,7 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Recording Controls */}
+          {/* 🎤 Record Controls */}
           <div className="flex flex-col items-center gap-4 py-6">
             {!audioBlob ? (
               <Button
@@ -241,15 +254,16 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
                 </Button>
               </div>
             )}
-
             <p className="text-sm text-muted-foreground text-center">
-              {recording ? "Recording... Tap to stop" : 
-               audioBlob ? "Recording saved. Play or transcribe" :
-               "Tap to start recording"}
+              {recording
+                ? "Recording... Tap to stop"
+                : audioBlob
+                ? "Recording saved. Play or transcribe"
+                : "Tap to start recording"}
             </p>
           </div>
 
-          {/* Transcribe Button */}
+          {/* 🔤 Transcription */}
           {audioBlob && !transcription && (
             <Button
               variant="outline"
@@ -263,12 +277,11 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
                   Transcribing...
                 </>
               ) : (
-                'Convert to Text'
+                "Convert to Text"
               )}
             </Button>
           )}
 
-          {/* Transcription Display */}
           {transcription && (
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium mb-2">Transcription:</p>
@@ -276,7 +289,7 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* 📨 Submit */}
           {audioBlob && (
             <div className="flex gap-2">
               <Button
@@ -300,7 +313,8 @@ export const VoiceReportDialog = ({ open, onOpenChange, reportType }: VoiceRepor
                 ) : (
                   <>
                     <Send className="w-4 h-4 mr-2" />
-                    Submit
+                    Submit & Dispatch
+                    <Ambulance className="w-4 h-4 ml-1" />
                   </>
                 )}
               </Button>

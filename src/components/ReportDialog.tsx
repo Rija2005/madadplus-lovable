@@ -1,200 +1,182 @@
-import { useState } from 'react';
-import React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { submitEmergencyReport, EmergencyReport } from '@/services/backendHooks';
-import { FileText, MapPin, AlertTriangle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, AlertTriangle, Ambulance, MapPin } from "lucide-react";
+import { submitEmergencyReport, callAmbulance } from "@/services/backendHooks";
 
 interface ReportDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  reportType: string;
-  initialDescription?: string;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export const TextReportDialog = ({ open, onOpenChange, reportType, initialDescription }: ReportDialogProps) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState(initialDescription || '');
-  const [location, setLocation] = useState('');
-  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
+// ✅ Dropdown options for emergency types
+const emergencyTypes = [
+  'Medical Emergency',
+  'Accident',
+  'Heart Attack',
+  'Stroke',
+  'Pregnancy/Birth',
+  'Breathing Problem',
+  'Other'
+];
+
+const ReportDialog: React.FC<ReportDialogProps> = ({ open, onOpenChange }) => {
   const [loading, setLoading] = useState(false);
-  const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [reportType, setReportType] = useState("");
+  const [report, setReport] = useState("");
+  const [location, setLocation] = useState("");
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const { toast } = useToast();
 
-  // Fetch location on mount
-  React.useEffect(() => {
-    if (open && !coordinates) {
-      fetchLocation();
+  // ✅ Auto-fetch current location when dialog opens
+  useEffect(() => {
+    if (open) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            setCoords({ latitude, longitude });
+            setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          },
+          () => {
+            setLocation("Location unavailable");
+            toast({ title: "Location Access Denied", description: "Please allow location access.", variant: "destructive" });
+          }
+        );
+      }
     }
-  }, [open]);
-
-  const fetchLocation = () => {
-    setFetchingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCoordinates({ latitude, longitude });
-          setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          setFetchingLocation(false);
-          toast({
-            title: "Location Detected",
-            description: "Your location has been captured"
-          });
-        },
-        (error) => {
-          setFetchingLocation(false);
-          setLocation('Location unavailable - Please enter manually');
-          toast({
-            title: "Location Access Denied",
-            description: "Please enter your location manually",
-            variant: "destructive"
-          });
-        }
-      );
-    } else {
-      setFetchingLocation(false);
-      setLocation('Geolocation not supported');
-    }
-  };
+  }, [open, toast]);
 
   const handleSubmit = async () => {
-    if (!title || !description) {
+    if (!reportType || !report || !location) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive"
+        title: "Missing Fields",
+        description: "Please select an emergency type, describe the situation, and provide your location.",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    
-    const report: EmergencyReport = {
-      type: reportType as any,
-      title,
-      description,
-      location: {
-        latitude: coordinates?.latitude,
-        longitude: coordinates?.longitude,
-        address: location || 'Location auto-detected'
-      },
-      timestamp: new Date(),
-      status: 'submitted',
-      priority: 'high',
-      isAnonymous: false
-    };
 
-    const result = await submitEmergencyReport(report);
-    setLoading(false);
+    try {
+      const reportData = {
+        type: reportType,
+        title: `Emergency - ${reportType}`,
+        description: report,
+        priority: "high",
+        isAnonymous: false,
+        location: {
+          address: location,
+          latitude: coords?.latitude,
+          longitude: coords?.longitude,
+        },
+      };
 
-    if (result.success) {
-      toast({
-        title: "Report Submitted!",
-        description: `Report ID: ${result.reportId}. Emergency services have been notified.`,
-        variant: "default"
-      });
-      setTitle('');
-      setDescription('');
-      setLocation('');
-      onOpenChange(false);
-    } else {
-      toast({
-        title: "Submission Failed",
-        description: result.error || "Please try again",
-        variant: "destructive"
-      });
+      const result = await submitEmergencyReport(reportData);
+
+      if (result.success && result.reportId) {
+        toast({ title: "Report Submitted", description: "Your emergency report has been received." });
+
+        const ambResult = await callAmbulance(result.reportId);
+        if (ambResult.success) {
+          toast({ title: "Ambulance Dispatched", description: `Ambulance ID: ${ambResult.ambulanceId}` });
+        } else {
+          toast({ title: "Dispatch Failed", description: ambResult.error || "Unable to dispatch ambulance.", variant: "destructive" });
+        }
+
+        setReportType("");
+        setReport("");
+        setLocation("");
+        onOpenChange(false);
+      } else {
+        toast({ title: "Submission Failed", description: result.error || "Try again later.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Text Report
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            Report an Emergency
           </DialogTitle>
           <DialogDescription>
-            Provide details about the emergency
+            Provide details about the emergency. Your location is auto-detected.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div>
-            <Label htmlFor="title">Emergency Title *</Label>
-            <Input
-              id="title"
-              placeholder="Brief title of emergency"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+            <Label htmlFor="emergencyType">Emergency Type</Label>
+            <Select onValueChange={setReportType} value={reportType}>
+              <SelectTrigger id="emergencyType">
+                <SelectValue placeholder="Select emergency type" />
+              </SelectTrigger>
+              <SelectContent>
+                {emergencyTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="report">Report Details</Label>
+            <Textarea
+              id="report"
+              placeholder="Describe the situation..."
+              value={report}
+              onChange={(e) => setReport(e.target.value)}
             />
           </div>
 
           <div>
-            <Label htmlFor="location">Location</Label>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
+            <Label htmlFor="location">Location (Auto-Detected)</Label>
+            <div className="flex gap-2">
               <Input
                 id="location"
-                placeholder={fetchingLocation ? "Detecting location..." : "Auto-detected or enter manually"}
+                placeholder="Detecting location..."
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                disabled={fetchingLocation}
+                readOnly
               />
-              {!fetchingLocation && !coordinates && (
-                <Button size="sm" variant="outline" onClick={fetchLocation}>
-                  Retry
-                </Button>
-              )}
+              <MapPin className="h-5 w-5 mt-2 text-muted-foreground" />
             </div>
-            {coordinates && (
-              <p className="text-xs text-success mt-1">✓ Location captured</p>
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
+          >
+            {loading ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+            ) : (
+              <><Ambulance className="mr-2 h-4 w-4" /> Submit & Call Ambulance</>
             )}
-          </div>
-
-          <div>
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              placeholder="Detailed description of the emergency..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg text-sm">
-            <AlertTriangle className="w-4 h-4 text-warning" />
-            <span>Emergency services will be notified immediately</span>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button 
-              variant="emergency" 
-              onClick={handleSubmit} 
-              className="flex-1"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Report'
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default ReportDialog;

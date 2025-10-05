@@ -1,12 +1,23 @@
-import { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { submitEmergencyReport, EmergencyReport } from '@/services/backendHooks';
-import { Camera, Upload, X, Loader2, Image, Video } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import {
+  submitEmergencyReport,
+  callAmbulance,
+  ReportForSubmission,
+} from "@/services/backendHooks";
+import { Upload, X, Loader2, Video, Camera, Ambulance } from "lucide-react";
 
 interface MediaUploadDialogProps {
   open: boolean;
@@ -14,250 +25,240 @@ interface MediaUploadDialogProps {
   reportType: string;
 }
 
-export const MediaUploadDialog = ({ open, onOpenChange, reportType }: MediaUploadDialogProps) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+export const MediaUploadDialog = ({
+  open,
+  onOpenChange,
+  reportType,
+}: MediaUploadDialogProps) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState('');
-  const [coordinates, setCoordinates] = useState<{latitude: number; longitude: number} | null>(null);
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Fetch location on mount
-  useState(() => {
-    if (open && !coordinates) {
+  // 🧭 Auto-fetch current location when opened
+  useEffect(() => {
+    if (open) {
+      setTitle("");
+      setDescription("");
+      setFiles([]);
+      setPreviews([]);
+      setCoordinates(null);
+
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
             setCoordinates({ latitude, longitude });
-            setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
           },
           () => {
-            setLocation('Location unavailable');
+            toast({
+              title: "Location Error",
+              description: "Unable to fetch location. Please enable location access.",
+              variant: "destructive",
+            });
           }
         );
       }
     }
-  });
+  }, [open]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    
-    if (selectedFiles.length + files.length > 5) {
-      toast({
-        title: "Too Many Files",
-        description: "Maximum 5 files allowed",
-        variant: "destructive"
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+
+      selectedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviews((prev) => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
       });
-      return;
     }
-
-    const newFiles = [...files, ...selectedFiles];
-    setFiles(newFiles);
-
-    // Create previews
-    const newPreviews = [...previews];
-    selectedFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews.push(reader.result as string);
-        setPreviews([...newPreviews]);
-      };
-      reader.readAsDataURL(file);
-    });
   };
 
   const removeFile = (index: number) => {
-    const newFiles = files.filter((_, i) => i !== index);
-    const newPreviews = previews.filter((_, i) => i !== index);
-    setFiles(newFiles);
-    setPreviews(newPreviews);
+    setFiles(files.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
-    if (!title || files.length === 0) {
+    if (!title || !coordinates) {
       toast({
         title: "Missing Information",
-        description: "Please provide a title and upload at least one file",
-        variant: "destructive"
+        description: "Please add a title and allow location access.",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
 
-    const report: EmergencyReport = {
-      type: reportType as any,
+    const reportData: ReportForSubmission = {
       title,
-      description: description || 'Media attached',
+      description,
       location: {
-        latitude: coordinates?.latitude,
-        longitude: coordinates?.longitude,
-        address: location || 'Location auto-detected'
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
       },
-      media: {
-        photos: files.filter(f => f.type.startsWith('image/')),
-        videos: files.filter(f => f.type.startsWith('video/'))
-      },
-      timestamp: new Date(),
-      status: 'submitted',
-      priority: 'high',
-      isAnonymous: false
+      type: reportType,
+      priority: "high",
+      isAnonymous: false,
     };
 
-    const result = await submitEmergencyReport(report);
-    setLoading(false);
+    try {
+      const result = await submitEmergencyReport(reportData);
+      if (result.success && result.reportId) {
+        toast({
+          title: "Report Submitted",
+          description: `Report ID: ${result.reportId}. Dispatching ambulance...`,
+        });
 
-    if (result.success) {
+        const ambResult = await callAmbulance(result.reportId);
+        if (ambResult.success) {
+          toast({
+            title: "Ambulance Dispatched",
+            description: `Ambulance ID: ${ambResult.ambulanceId}`,
+          });
+        } else {
+          toast({
+            title: "Dispatch Failed",
+            description: ambResult.error || "Unable to dispatch ambulance.",
+            variant: "destructive",
+          });
+        }
+
+        setFiles([]);
+        setPreviews([]);
+        setTitle("");
+        setDescription("");
+        onOpenChange(false);
+      } else {
+        toast({
+          title: "Submission Failed",
+          description: result.error || "Unknown error. Try again later.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error(error);
       toast({
-        title: "Report Submitted!",
-        description: `Report ID: ${result.reportId}. Media uploaded successfully.`,
-        variant: "default"
+        title: "Error",
+        description: "Failed to submit media report.",
+        variant: "destructive",
       });
-      setTitle('');
-      setDescription('');
-      setFiles([]);
-      setPreviews([]);
-      onOpenChange(false);
-    } else {
-      toast({
-        title: "Submission Failed",
-        description: result.error || "Please try again",
-        variant: "destructive"
-      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Camera className="w-5 h-5" />
-            Photo/Video Report
+            <Camera className="h-5 w-5" />
+            Submit Media Report
           </DialogTitle>
           <DialogDescription>
-            Upload photos or videos of the emergency
+            Attach photos or videos — your location will be sent automatically.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="media-title">Title *</Label>
-            <Input
-              id="media-title"
-              placeholder="Brief title of emergency"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+          <Input
+            placeholder="Report Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <Textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          {/* File Upload */}
+          <div
+            className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-muted"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Click to upload photos or videos
+            </p>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              accept="image/*,video/*"
+              className="hidden"
             />
           </div>
 
-          <div>
-            <Label htmlFor="media-description">Description</Label>
-            <Textarea
-              id="media-description"
-              placeholder="Additional details (optional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          {/* File Upload Area */}
-          <div>
-            <Label>Media Files (Max 5)</Label>
-            <div 
-              className="mt-2 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Click to upload photos or videos
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Supports: JPG, PNG, MP4, MOV (Max 50MB per file)
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </div>
-          </div>
-
-          {/* File Previews */}
-          {previews.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
-              {previews.map((preview, index) => (
-                <div key={index} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                    {files[index].type.startsWith('image/') ? (
-                      <img 
-                        src={preview} 
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Video className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                  <div className="absolute bottom-2 left-2">
-                    {files[index].type.startsWith('image/') ? (
-                      <Image className="w-4 h-4 text-white drop-shadow-lg" />
-                    ) : (
-                      <Video className="w-4 h-4 text-white drop-shadow-lg" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Submit Buttons */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="emergency"
-              onClick={handleSubmit}
-              disabled={loading || files.length === 0}
-              className="flex-1"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Report'
-              )}
-            </Button>
+          {/* Preview Section */}
+          <div className="grid grid-cols-3 gap-2">
+            {previews.map((src, i) => (
+              <div key={i} className="relative">
+                {files[i].type.startsWith("video") ? (
+                  <video
+                    src={src}
+                    controls
+                    className="w-full h-24 rounded-md object-cover"
+                  />
+                ) : (
+                  <img
+                    src={src}
+                    alt={`Preview ${i}`}
+                    className="w-full h-24 rounded-md object-cover"
+                  />
+                )}
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => removeFile(i)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || files.length === 0}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Ambulance className="mr-2 h-4 w-4" />
+                Submit & Call Ambulance
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
