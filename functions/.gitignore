@@ -1,8 +1,9 @@
 # Compiled JavaScript files
 lib/**/*.js
 lib/**/*.js.map
+functions/.env.madad-plus
 
-.env.madad-plus
+
 # TypeScript v1 declaration files
 typings/
 
