@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+functions/.env.madad-plus
 
 # Editor directories and files
 .vscode/*
