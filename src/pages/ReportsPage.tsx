@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db, storage, auth } from "@/firebase";
 import {
   collection,
@@ -40,6 +40,9 @@ import {
   Calendar,
 } from "lucide-react";
 
+// Read API key from environment variables
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
 interface Report {
   id: string;
   type: string;
@@ -63,6 +66,7 @@ const ReportsPage = () => {
   const [userReports, setUserReports] = useState<Report[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
+  const locationFetched = useRef(false);
 
   // ✅ Get current user
   useEffect(() => {
@@ -93,6 +97,67 @@ const ReportsPage = () => {
 
     return () => unsubscribe();
   }, [user]);
+
+  const fetchAddress = async (latitude: number, longitude: number) => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error("Google Maps API key is missing. Please set VITE_GOOGLE_MAPS_API_KEY in your .env file.");
+      toast({
+        title: "Configuration Error",
+        description: "Google Maps API key is not configured.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      if (!response.ok) throw new Error("Network response was not ok");
+
+      const data = await response.json();
+      if (data.status === "OK" && data.results[0]) {
+        setLocation(data.results[0].formatted_address);
+      } else {
+        throw new Error(`Geocoding failed: ${data.status} - ${data.error_message || 'No results found.'}`);
+      }
+    } catch (error) {
+      console.error("Geocoding API Error:", error);
+      toast({
+        title: "Unable to fetch address",
+        description: "Please check your API key and internet connection.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLocationClick = () => {
+    if (location || locationFetched.current) return;
+
+    locationFetched.current = true;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          fetchAddress(pos.coords.latitude, pos.coords.longitude);
+        },
+        () => {
+          toast({
+            title: "Location access denied",
+            description: "Please enable GPS.",
+            variant: "destructive",
+          });
+        }
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'new') {
+        handleLocationClick();
+    }
+  }, [activeTab]);
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -208,7 +273,7 @@ const ReportsPage = () => {
               </div>
               <div>
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Johar Town, Lahore" />
+                <Input id="location" value={location} onFocus={handleLocationClick} onChange={(e) => setLocation(e.target.value)} placeholder="Detecting location..." />
               </div>
             </div>
             <div>

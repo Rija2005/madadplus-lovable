@@ -1,123 +1,79 @@
-import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
-import {setGlobalOptions} from "firebase-functions/v2";
-import * as admin from "firebase-admin";
-import {GoogleGenerativeAI} from "@google/generative-ai";
-import {defineString} from "firebase-functions/params";
 
-// Initialize Firebase Admin
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+
 admin.initializeApp();
 
-// Set the region for all functions in this file
-setGlobalOptions({region: "asia-south1"});
+// --- Centralized Cloud Function Error Logger ---
+const logFunctionError = (functionName: string, error: any, contextInfo: string, hint: string) => {
+  functions.logger.error(
+    `[${functionName}] Backend Function Error:`,
+    `\n  - Context: ${contextInfo}`,
+    `\n  - Type: ${error.code || 'Unknown'}`,
+    `\n  - Message: ${error.message}`,
+    `\n  - Hint: ${hint}`,
+    `\n  - Full Error:`,
+    error
+  );
+};
 
-// Define the Gemini API Key as a secret parameter
-const geminiApiKey = defineString("GEMINI_API_KEY");
-
-/**
- * Initializes the Gemini AI client.
- * This is structured to safely handle cases where the API key might not be set.
- */
-function getGenAIClient() {
-  const key = geminiApiKey.value();
-  if (!key) {
-    console.error("Gemini API key secret is not set. Please set it using `firebase functions:secrets:set GEMINI_API_KEY`");
-    return null;
-  }
-  return new GoogleGenerativeAI(key);
-}
-
-const db = admin.firestore();
 
 /**
- * Gen 2 Cloud Function to be triggered when a new report is created.
- * It analyzes the report's description and updates it with a category.
+ * Cloud Function to send a push notification to a user when their report is successfully received.
+ * This is triggered when a new document is created in the 'ambulanceReports' collection.
  */
-export const onReportCreate = onDocumentCreated("reports/{reportId}", async (event) => {
-  const genAI = getGenAIClient();
-  if (!genAI) {
-    return; // Stop execution if client is not available
-  }
+export const onReportReceived = functions.firestore
+  .document("ambulanceReports/{reportId}")
+  .onCreate(async (snapshot, context) => {
+    const { reportId } = context.params;
+    const reportData = snapshot.data();
 
-  const snap = event.data;
-  if (!snap) {
-    console.log("No data associated with the event.");
-    return;
-  }
+    if (!reportData || !reportData.userId) {
+      functions.logger.warn(`[onReportReceived] Aborting: Report data or userId is missing for reportId: ${reportId}.`);
+      return;
+    }
 
-  const report = snap.data();
-  const {description} = report;
+    const { userId, message } = reportData;
+    const notificationMessage = message || "Report received — we’re working on it!";
 
-  if (!description) {
-    console.log("No description, skipping AI analysis.");
-    return;
-  }
+    try {
+      // Get the user's FCM token from the 'fcmTokens' collection
+      const fcmTokenDoc = await admin.firestore().collection("fcmTokens").doc(userId).get();
 
-  console.log(`Analyzing report: ${event.params.reportId}`);
+      if (!fcmTokenDoc.exists || !fcmTokenDoc.data()?.token) {
+        functions.logger.warn(`[onReportReceived] Aborting: FCM token not found or is invalid for user: ${userId}.`);
+        return;
+      }
 
-  try {
-    const model = genAI.getGenerativeModel({model: "gemini-pro"});
-    const prompt = `Analyze this emergency report and provide one category from: Fire, Accident, Health, Crime, Natural Disaster, Other. Description: "${description}"`;
+      const token = fcmTokenDoc.data()?.token;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const category = response.text().trim();
+      // Construct the notification message
+      const payload = {
+        notification: {
+          title: "✅ Report Submitted Successfully",
+          body: notificationMessage,
+        },
+        token: token,
+      };
 
-    await snap.ref.update({aiAnalysis: {category: category || "Other"}});
-  } catch (error) {
-    console.error("Error during Gemini API analysis:", error);
-    await snap.ref.update({aiAnalysis: {error: "Analysis failed."}});
-  }
-});
+      functions.logger.log(`[onReportReceived] Sending notification to user: ${userId} for report: ${reportId}`);
 
-/**
- * Gen 2 Cloud Function to be triggered when a report is updated.
- * Sends a push notification to the user if the status has changed.
- */
-export const onReportUpdate = onDocumentUpdated("reports/{reportId}", async (event) => {
-  const snap = event.data;
-  if (!snap) {
-    console.log("No data associated with the event.");
-    return;
-  }
+      // Send the notification to the user's device
+      const response = await admin.messaging().send(payload);
+      functions.logger.log("[onReportReceived] Successfully sent message:", response);
 
-  const before = snap.before.data();
-  const after = snap.after.data();
+    } catch (error: any) {
+      logFunctionError(
+        "onReportReceived",
+        error,
+        `Sending notification for reportId: ${reportId} to userId: ${userId}`,
+        "Check the validity of the FCM token, and ensure the Firebase Messaging API is enabled."
+      );
 
-  if (before.status === after.status) {
-    console.log("Status unchanged. No notification needed.");
-    return;
-  }
-
-  const userId = after.userId;
-  if (!userId) {
-    console.log("Report is missing a userId. Cannot send notification.");
-    return;
-  }
-
-  const userDoc = await db.collection("users").doc(userId).get();
-  if (!userDoc.exists) {
-    console.error(`User document for userId ${userId} not found.`);
-    return;
-  }
-
-  const fcmToken = userDoc.data()?.fcmToken;
-  if (!fcmToken) {
-    console.log(`FCM token for user ${userId} not found.`);
-    return;
-  }
-
-  const payload = {
-    notification: {
-      title: "Report Status Updated",
-      body: `Your report status is now "${after.status}".`,
-    },
-    token: fcmToken,
-  };
-
-  try {
-    await admin.messaging().send(payload);
-    console.log("Push notification sent successfully.");
-  } catch (error) {
-    console.error("Error sending push notification:", error);
-  }
-});
+      // Optional: Clean up invalid tokens
+      if (error.code === 'messaging/registration-token-not-registered') {
+        await admin.firestore().collection("fcmTokens").doc(userId).delete();
+        functions.logger.log(`[onReportReceived] Deleted invalid FCM token for user: ${userId}`);
+      }
+    }
+  });

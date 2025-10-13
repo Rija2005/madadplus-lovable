@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 functions/.env.madad-plus
-
+.env.local
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

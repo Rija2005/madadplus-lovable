@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -29,12 +28,10 @@ import ReportDialog from "@/components/ReportDialog";
 import { VoiceReportDialog } from "@/components/VoiceReportDialog";
 import { MediaUploadDialog } from "@/components/MediaUploadDialog";
 
-
 import heroBackground from "@/assets/hero-background.jpg";
 
 // Firebase imports
 import { auth, db } from "../firebase";
-import { signInAnonymously } from "firebase/auth";
 import {
   collection,
   addDoc,
@@ -46,14 +43,17 @@ export const EmergencyHome = () => {
   const [reportMethod, setReportMethod] = useState<
     "text" | "voice" | "photo" | null
   >(null);
+  const [currentTime, setCurrentTime] = useState<string>("");
 
-  // 🔐 Auto sign-in user anonymously
+  // 🕒 Update current time every second
   useEffect(() => {
-    if (!auth.currentUser) {
-      signInAnonymously(auth).catch((err) =>
-        console.error("Anonymous sign-in failed:", err)
-      );
-    }
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString());
+    };
+    updateClock(); // set immediately
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // 🚨 Handle submit to Firestore
@@ -78,33 +78,32 @@ export const EmergencyHome = () => {
   };
 
   // Emergency categories
-// Emergency categories
-const emergencyCategories = [
-  { 
-    icon: Flame, 
-    title: <>Fire Emergency <span className="text-sm text-gray-500">(آگ لگ گئی ہے)</span></>, 
-    type: "fire", 
-    color: "bg-red-100" 
-  },
-  { 
-    icon: Shield, 
-    title: <>Crime / Police Help <span className="text-sm text-gray-500">(جرم/پولیس مدد)</span></>, 
-    type: "crime", 
-    color: "bg-blue-100" 
-  },
-  { 
-    icon: Heart, 
-    title: <>Medical Emergency <span className="text-sm text-gray-500">(طبی ایمرجنسی)</span></>, 
-    type: "medical", 
-    color: "bg-green-100" 
-  },
-  { 
-    icon: Car, 
-    title: <>Accident <span className="text-sm text-gray-500">(حادثہ)</span></>, 
-    type: "accident", 
-    color: "bg-yellow-100" 
-  },
-];
+  const emergencyCategories = [
+    { 
+      icon: Flame, 
+      title: <>Fire Emergency <span className="text-sm text-gray-500">(آگ لگ گئی ہے)</span></>, 
+      type: "fire", 
+      color: "bg-red-100" 
+    },
+    { 
+      icon: Shield, 
+      title: <>Crime / Police Help <span className="text-sm text-gray-500">(جرم/پولیس مدد)</span></>, 
+      type: "crime", 
+      color: "bg-blue-100" 
+    },
+    { 
+      icon: Heart, 
+      title: <>Medical Emergency <span className="text-sm text-gray-500">(طبی ایمرجنسی)</span></>, 
+      type: "medical", 
+      color: "bg-green-100" 
+    },
+    { 
+      icon: Car, 
+      title: <>Accident <span className="text-sm text-gray-500">(حادثہ)</span></>, 
+      type: "accident", 
+      color: "bg-yellow-100" 
+    },
+  ];
 
   // Quick actions
   const quickActions = [
@@ -124,9 +123,9 @@ const emergencyCategories = [
   ];
 
   const reportMethods = [
-      { id: 'text', icon: FileText, title: 'Text' },
-      { id: 'voice', icon: Mic, title: 'Voice' },
-      { id: 'photo', icon: Camera, title: 'Photo/Video' },
+    { id: "text", icon: FileText, title: "Text" },
+    { id: "voice", icon: Mic, title: "Voice" },
+    { id: "photo", icon: Camera, title: "Photo/Video" },
   ];
 
   return (
@@ -142,11 +141,13 @@ const emergencyCategories = [
       >
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 max-w-2xl px-4">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">Madad+</h1>
-  <p className="text-lg md:text-xl">
-    Your Emergency Assistant for Instant Help{" "}
-    <span className="text-sm text-gray-500">(مدد کے لیے آپ کا ایمرجنسی اسسٹنٹ)</span>
-  </p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-2">Madad+</h1>
+          <p className="text-lg md:text-xl">
+            Your Emergency Assistant for Instant Help{" "}
+            <span className="text-sm text-gray-500">
+              (مدد کے لیے آپ کا ایمرجنسی اسسٹنٹ)
+            </span>
+          </p>
         </div>
       </div>
 
@@ -158,7 +159,6 @@ const emergencyCategories = [
               key={action.title}
               to={action.href}
               className={`flex flex-col items-center justify-center p-4 rounded-lg text-white shadow-md hover:shadow-lg transition-all ${action.color}`}
-
             >
               <div
                 className={`p-3 rounded-full ${action.color} text-white mb-2`}
@@ -195,7 +195,9 @@ const emergencyCategories = [
               <Card
                 key={method.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow h-full"
-                onClick={() => setReportMethod(method.id as 'text' | 'voice' | 'photo')}
+                onClick={() =>
+                  setReportMethod(method.id as "text" | "voice" | "photo")
+                }
               >
                 <CardHeader className="flex flex-col items-center text-center">
                   <method.icon className="w-8 h-8 mb-2" />
@@ -208,16 +210,16 @@ const emergencyCategories = [
 
         {/* Render Controlled Dialogs */}
         <ReportDialog
-          open={reportMethod === 'text'}
+          open={reportMethod === "text"}
           onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
         />
         <VoiceReportDialog
-          open={reportMethod === 'voice'}
+          open={reportMethod === "voice"}
           onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
           reportType={reportType!}
         />
         <MediaUploadDialog
-          open={reportMethod === 'photo'}
+          open={reportMethod === "photo"}
           onOpenChange={(isOpen) => !isOpen && setReportMethod(null)}
           reportType={reportType!}
         />
@@ -250,7 +252,7 @@ const emergencyCategories = [
               <div className="flex items-center justify-between">
                 <span>Response Time</span>
                 <Badge variant="secondary">
-                  <Clock className="w-4 h-4 mr-1" /> 5 min
+                  <Clock className="w-4 h-4 mr-1" /> {currentTime}
                 </Badge>
               </div>
             </CardContent>
