@@ -147,7 +147,8 @@ const ReportsPage = () => {
             description: "Please enable GPS.",
             variant: "destructive",
           });
-        }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     }
   };

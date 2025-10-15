@@ -71,15 +71,26 @@ export const useIsOnline = () => {
 };
 
 // Submits an emergency report to Firestore or queues it if offline
-export const submitEmergencyReport = async (report: object): Promise<{ success: boolean; reportId?: string; error?: string }> => {
+export const submitEmergencyReport = async (report: any): Promise<{ success: boolean; reportId?: string; error?: string }> => {
   try {
     const user = await ensureAuth(); // Ensure user is authenticated
 
-    // Handle offline case first
+    const reportWithTimestamp = {
+        ...report,
+        location: {
+            latitude: report.location?.latitude ?? null,
+            longitude: report.location?.longitude ?? null,
+        },
+        userId: user.uid,
+        timestamp: serverTimestamp(),
+        status: 'submitted'
+    };
+
+    // Handle offline case
     if (!navigator.onLine) {
         const queue = JSON.parse(localStorage.getItem('madadgar-offline-queue') || '[]');
         const tempId = `offline-${Date.now()}`;
-        const offlineReport = { ...report, id: tempId, userId: user.uid, timestamp: new Date().toISOString(), status: 'queued' };
+        const offlineReport = { ...reportWithTimestamp, id: tempId, timestamp: new Date().toISOString(), status: 'queued' };
         queue.push(offlineReport);
         localStorage.setItem('madadgar-offline-queue', JSON.stringify(queue));
         toast.info("You are offline. Report queued successfully.");
@@ -87,7 +98,6 @@ export const submitEmergencyReport = async (report: object): Promise<{ success: 
     }
 
     // Handle online case
-    const reportWithTimestamp = { ...report, userId: user.uid, timestamp: serverTimestamp(), status: 'submitted' };
     const docRef = await addDoc(collection(db, 'reports'), reportWithTimestamp);
     return { success: true, reportId: docRef.id };
   } catch (error: any) {

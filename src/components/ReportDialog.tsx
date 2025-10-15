@@ -54,7 +54,8 @@ const ReportDialog: React.FC<ReportDialogProps> = ({ open, onOpenChange }) => {
           () => {
             setLocation("Location unavailable");
             toast({ title: "Location Access Denied", description: "Please allow location access.", variant: "destructive" });
-          }
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
       }
     }
